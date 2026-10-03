@@ -1,0 +1,6 @@
+{
+  "name": "ZUNO AI PULIDOR 56300",
+  "description": "Herramienta de producción y masterización musical con IA. Análisis acústico, afinación vocal, balance de mezcla, pulido A/B y masterización.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
