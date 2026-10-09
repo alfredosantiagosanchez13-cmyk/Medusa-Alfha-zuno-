@@ -5,7 +5,7 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [SongProject::class], version = 1, exportSchema = false)
+@Database(entities = [SongProject::class], version = 2, exportSchema = false)
 abstract class ZunoDatabase : RoomDatabase() {
     abstract fun songProjectDao(): SongProjectDao
 

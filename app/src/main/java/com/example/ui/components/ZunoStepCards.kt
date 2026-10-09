@@ -22,7 +22,6 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.SettingsVoice
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -45,10 +44,7 @@ import com.example.ui.WorkflowStep
 import com.example.ui.theme.MetallicGrayDark
 import com.example.ui.theme.MetallicGrayLight
 import com.example.ui.theme.MetallicGrayMid
-import com.example.ui.theme.StudioCyan
 import com.example.ui.theme.StudioGreenLed
-import com.example.ui.theme.StudioOrange
-import com.example.ui.theme.StudioRedClipping
 import com.example.ui.theme.ZunoBlack
 import com.example.ui.theme.ZunoBorderMetallic
 import com.example.ui.theme.ZunoGold
@@ -80,7 +76,7 @@ fun ZunoStepCards(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        // ETAPA 1: CARGAR & COMPROBAR EXTRACCIÓN (PRIORIDAD 2)
+        // ETAPA 1: CARGA & INGESTIÓN REAL (SAF)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -108,27 +104,27 @@ fun ZunoStepCards(
                         Spacer(modifier = Modifier.width(10.dp))
                         Column {
                             Text(
-                                text = "ETAPA 1: CARGA & EXTRACCIÓN",
+                                text = "ETAPA 1: INGESTIÓN & EXTRACCIÓN REAL",
                                 color = Color.White,
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = "MP4, MP3, WAV • Comprobación 6 puntos",
+                                text = "Storage Access Framework • Sin datos simulados",
                                 color = MetallicGrayMid,
                                 fontSize = 10.sp
                             )
                         }
                     }
 
-                    // Upload Button
+                    // Botón SUBIR con SAF
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
                             .background(ZunoSurfaceDark)
-                            .border(1.dp, ZunoBorderMetallic, RoundedCornerShape(8.dp))
+                            .border(1.dp, ZunoGold, RoundedCornerShape(8.dp))
                             .clickable { onPickFile() }
-                            .padding(horizontal = 10.dp, vertical = 7.dp)
+                            .padding(horizontal = 12.dp, vertical = 8.dp)
                             .testTag("upload_song_button"),
                         contentAlignment = Alignment.Center
                     ) {
@@ -136,29 +132,30 @@ fun ZunoStepCards(
                             Icon(
                                 imageVector = Icons.Default.CloudUpload,
                                 contentDescription = null,
-                                tint = ZunoGold,
-                                modifier = Modifier.size(14.dp)
+                                tint = ZunoGoldBright,
+                                modifier = Modifier.size(15.dp)
                             )
-                            Spacer(modifier = Modifier.width(4.dp))
+                            Spacer(modifier = Modifier.width(5.dp))
                             Text(
-                                text = "SUBIR",
+                                text = "SUBIR ARCHIVO",
                                 color = Color.White,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Black
                             )
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-                // Demos Selection with "El Fondo Era el Cimiento.mp4" first
+                // Selector de demos de estudio ("El Fondo Era el Cimiento.mp4" prioritario)
                 Text(
-                    text = "Seleccionar canción objetivo:",
+                    text = "O cargar pista de estudio integrada:",
                     color = MetallicGrayMid,
                     fontSize = 10.sp
                 )
                 Spacer(modifier = Modifier.height(6.dp))
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -191,13 +188,81 @@ fun ZunoStepCards(
                     }
                 }
 
+                if (isExtracting) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(ZunoSurfaceDark)
+                            .padding(10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            color = ZunoGold,
+                            strokeWidth = 2.dp
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Copiando archivo a memoria interna y extrayendo audio...",
+                            color = ZunoGoldBright,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+        }
+
+        // ETAPA 2: ANALIZAR CON IA (Habilitado progresivamente solo tras ingestión correcta)
+        val isAnalyzing = (currentStep == WorkflowStep.Analyzing)
+        val canAnalyze = isExtracted
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .background(ZunoSurfaceCard)
+                .border(
+                    width = 1.dp,
+                    color = if (isAnalyzed) StudioGreenLed.copy(alpha = 0.5f) else if (canAnalyze) ZunoGold.copy(alpha = 0.4f) else ZunoBorderMetallic,
+                    shape = RoundedCornerShape(16.dp)
+                )
+                .padding(16.dp)
+        ) {
+            Column {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    StepNumberBadge(
+                        stepNumber = "2",
+                        isActive = isAnalyzed,
+                        activeColor = if (isAnalyzed) StudioGreenLed else ZunoGold
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column {
+                        Text(
+                            text = "ETAPA 2: DIAGNÓSTICO ACÚSTICO COMPLETO",
+                            color = if (canAnalyze) Color.White else MetallicGrayMid,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = if (canAnalyze) "Cálculo físico de LUFS, True Peak, RMS y Rango Dinámico" else "Bloqueado: Requiere completar Ingestión en Etapa 1",
+                            color = MetallicGrayLight,
+                            fontSize = 10.sp
+                        )
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Primary Extraction Trigger Button
-                val extractButtonBrush = if (isExtracted) {
-                    Brush.horizontalGradient(listOf(StudioGreenLed.copy(alpha = 0.2f), StudioGreenLed.copy(alpha = 0.2f)))
-                } else {
+                val analyzeButtonBrush = if (canAnalyze) {
                     Brush.horizontalGradient(listOf(ZunoGold, ZunoGoldBright))
+                } else {
+                    Brush.horizontalGradient(listOf(MetallicGrayDark, MetallicGrayDark))
                 }
 
                 Box(
@@ -205,17 +270,17 @@ fun ZunoStepCards(
                         .fillMaxWidth()
                         .height(48.dp)
                         .clip(RoundedCornerShape(10.dp))
-                        .background(extractButtonBrush)
+                        .background(analyzeButtonBrush)
                         .border(
                             1.dp,
-                            if (isExtracted) StudioGreenLed else ZunoGoldBright,
+                            if (canAnalyze) ZunoGoldBright else ZunoBorderMetallic,
                             RoundedCornerShape(10.dp)
                         )
-                        .clickable(enabled = !isExtracting) { onVerifyAndExtract() }
-                        .testTag("verify_extract_button"),
+                        .clickable(enabled = canAnalyze && !isAnalyzing) { onAnalyze() }
+                        .testTag("analyze_song_button"),
                     contentAlignment = Alignment.Center
                 ) {
-                    if (isExtracting) {
+                    if (isAnalyzing) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(18.dp),
@@ -224,7 +289,7 @@ fun ZunoStepCards(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "COMPROBANDO ARCHIVO Y EXTRAYENDO AUDIO...",
+                                text = "ANALIZANDO BLOQUES DE AUDIO...",
                                 color = ZunoBlack,
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Black
@@ -233,97 +298,23 @@ fun ZunoStepCards(
                     } else {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
-                                imageVector = if (isExtracted) Icons.Default.Check else Icons.Default.SettingsVoice,
+                                imageVector = if (canAnalyze) Icons.Default.AutoAwesome else Icons.Default.Lock,
                                 contentDescription = null,
-                                tint = if (isExtracted) StudioGreenLed else ZunoBlack,
+                                tint = if (canAnalyze) ZunoBlack else MetallicGrayLight,
                                 modifier = Modifier.size(16.dp)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = if (isExtracted) "✓ AUDIO EXTRAÍDO Y VERIFICADO (DETENIDO)" else "COMPROBAR Y EXTRAER AUDIO (${trackInfo?.title?.take(22) ?: ""})",
-                                color = if (isExtracted) StudioGreenLed else ZunoBlack,
+                                text = if (isAnalyzed) "✓ RE-ANALIZAR PISTA FÍSICA" else if (canAnalyze) "✨ ANALIZAR CON IA" else "ANALIZAR (COMPLETAR INGESTIÓN PRIMERO)",
+                                color = if (canAnalyze) ZunoBlack else MetallicGrayLight,
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Black
                             )
                         }
                     }
                 }
-            }
-        }
 
-        // ETAPA 2: ANALIZAR CON IA (Habilitado progresivamente)
-        val isAnalyzing = (currentStep == WorkflowStep.Analyzing)
-        val canAnalyze = isExtracted
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
-                .background(if (canAnalyze) ZunoSurfaceCard else ZunoSurfaceCard.copy(alpha = 0.5f))
-                .border(
-                    width = 1.dp,
-                    color = if (isAnalyzed) StudioCyan.copy(alpha = 0.5f) else ZunoBorderMetallic,
-                    shape = RoundedCornerShape(16.dp)
-                )
-                .padding(16.dp)
-        ) {
-            Column {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        StepNumberBadge(
-                            stepNumber = "2",
-                            isActive = isAnalyzed,
-                            activeColor = StudioCyan
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Column {
-                            Text(
-                                text = "ETAPA 2: ANALIZAR CON IA",
-                                color = if (canAnalyze) Color.White else MetallicGrayMid,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = if (canAnalyze) "Motor local ZUNO (independiente de Gemini)" else "Requiere completar Etapa 1",
-                                color = MetallicGrayMid,
-                                fontSize = 10.sp
-                            )
-                        }
-                    }
-
-                    if (isAnalyzing) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(22.dp),
-                            color = StudioCyan,
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(if (canAnalyze) StudioCyan.copy(alpha = 0.15f) else ZunoSurfaceDark)
-                                .border(1.dp, if (canAnalyze) StudioCyan else MetallicGrayDark, RoundedCornerShape(8.dp))
-                                .clickable(enabled = canAnalyze) { onAnalyze() }
-                                .padding(horizontal = 12.dp, vertical = 7.dp)
-                                .testTag("analyze_button"),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = if (isAnalyzed) "RE-ANALIZAR" else "ANALIZAR",
-                                color = if (canAnalyze) StudioCyan else MetallicGrayDark,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                }
-
-                // Gemini Status Notice Banner if present
-                if (!geminiStatusNotice.isNullOrBlank()) {
+                if (!geminiStatusNotice.isNullOrBlank() && canAnalyze) {
                     Spacer(modifier = Modifier.height(10.dp))
                     Box(
                         modifier = Modifier
@@ -353,7 +344,7 @@ fun ZunoStepCards(
             }
         }
 
-        // ETAPA 3: ✨ PULIR CANCIÓN CON IA (Habilitado progresivamente)
+        // ETAPA 3: PRODUCCIÓN Y MASTERIZACIÓN (Habilitado progresivamente solo tras análisis)
         val isPolishing = (currentStep == WorkflowStep.Polishing)
         val canPolish = isAnalyzed
 
@@ -404,7 +395,6 @@ fun ZunoStepCards(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Giant Master CTA Button
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -453,7 +443,7 @@ fun ZunoStepCards(
                 }
             }
 
-            // Applied Steps Checklist
+            // Checklist de pasos aplicados
             AnimatedVisibility(visible = appliedSteps.isNotEmpty()) {
                 Column(
                     modifier = Modifier

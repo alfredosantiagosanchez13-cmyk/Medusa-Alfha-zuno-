@@ -7,7 +7,6 @@ import com.example.audio.PolishProcessingResult
 import com.example.data.AcousticDiagnosis
 import com.example.data.AppliedPolishingStep
 import com.example.data.AudioTrackInfo
-import com.example.data.MasterProfile
 import com.example.data.PolishSettings
 import com.example.data.SongProject
 
@@ -25,7 +24,7 @@ data class ZunoUiState(
     val currentStep: WorkflowStep = WorkflowStep.Idle,
     val currentTrack: AudioTrackInfo? = null,
     
-    // Extracción y Verificación de Audio
+    // Extracción y Verificación de Audio Real
     val isExtracting: Boolean = false,
     val extractionReport: AudioExtractionReport? = null,
     val failedModule: String? = null,
@@ -35,6 +34,7 @@ data class ZunoUiState(
     val diagnosis: AcousticDiagnosis? = null,
     val geminiStatusNotice: String? = "Consultor IA externo no disponible. Continuando con motor local.",
     val isExternalAiActive: Boolean = false,
+    val geminiAdvice: com.example.audio.network.GeminiMasteringAdvice? = null,
 
     // Pulido con IA
     val appliedSteps: List<AppliedPolishingStep> = emptyList(),
@@ -46,7 +46,7 @@ data class ZunoUiState(
     val isPlaying: Boolean = false,
     val playbackMode: PlaybackMode = PlaybackMode.POLISHED_B,
     val currentPositionMs: Long = 0L,
-    val totalDurationMs: Long = 15000L,
+    val totalDurationMs: Long = 0L,
     val spectrumMagnitudes: List<Float> = List(16) { 0.15f },
 
     // Exporting state

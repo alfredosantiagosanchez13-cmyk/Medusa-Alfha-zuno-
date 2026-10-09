@@ -17,7 +17,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Error
-import androidx.compose.material.icons.filled.VideoFile
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,16 +24,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.audio.AudioExtractionReport
+import com.example.ui.theme.MetallicGrayDark
 import com.example.ui.theme.MetallicGrayLight
 import com.example.ui.theme.MetallicGrayMid
-import com.example.ui.theme.StudioCyan
 import com.example.ui.theme.StudioGreenLed
 import com.example.ui.theme.StudioRedClipping
-import com.example.ui.theme.ZunoBlack
 import com.example.ui.theme.ZunoBorderMetallic
 import com.example.ui.theme.ZunoGold
 import com.example.ui.theme.ZunoGoldBright
@@ -55,12 +54,12 @@ fun ZunoExtractionReportCard(
             .background(ZunoSurfaceCard)
             .border(
                 width = 1.dp,
-                color = if (isOk) StudioGreenLed.copy(alpha = 0.5f) else StudioRedClipping.copy(alpha = 0.5f),
+                color = if (isOk) StudioGreenLed.copy(alpha = 0.5f) else StudioRedClipping.copy(alpha = 0.6f),
                 shape = RoundedCornerShape(16.dp)
             )
             .padding(16.dp)
     ) {
-        // Header
+        // Encabezado
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -84,7 +83,7 @@ fun ZunoExtractionReportCard(
                 Spacer(modifier = Modifier.width(10.dp))
                 Column {
                     Text(
-                        text = if (isOk) "RESULTADO: EXTRACCIÓN DE AUDIO EXITOSA" else "RESULTADO: FALLO EN EXTRACCIÓN",
+                        text = if (isOk) "VALIDACIÓN OBLIGATORIA DE INGESTIÓN · EXITOSA" else "ERROR DE INGESTIÓN REAL",
                         color = if (isOk) StudioGreenLed else StudioRedClipping,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
@@ -102,102 +101,140 @@ fun ZunoExtractionReportCard(
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        // 6-Point Verification Grid
+        // Si falló, mostrar banner de error explícito (Punto 3: Eliminar fallback silencioso)
+        if (!isOk) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(StudioRedClipping.copy(alpha = 0.15f))
+                    .border(1.dp, StudioRedClipping.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                    .padding(12.dp)
+            ) {
+                Column {
+                    Text(
+                        text = "NO SE PUDO LEER EL ARCHIVO SELECCIONADO",
+                        color = StudioRedClipping,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = report.errorMessage ?: "Fallo al acceder al InputStream o archivo vacío.",
+                        color = Color.White,
+                        fontSize = 11.sp
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(10.dp))
+        }
+
+        // TABLA COMPLETA DE 11 PUNTOS (ORDEN ZUNO 13 · REPORTE FINAL)
+        Text(
+            text = "REPORTE FÍSICO DE INGESTIÓN & EXTRACCIÓN:",
+            color = ZunoGold,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 0.8.sp
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(10.dp))
                 .background(ZunoSurfaceDark)
-                .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+                .border(1.dp, ZunoBorderMetallic, RoundedCornerShape(10.dp))
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            CheckRow(
-                number = "1",
-                label = "Archivo accesible",
-                status = if (report.isAccessible) "ACCESIBLE (${report.fileSizeFormatted})" else "NO ACCESIBLE",
-                isOk = report.isAccessible
+            ReportTableRow("ARCHIVO SELECCIONADO", report.fileName)
+            ReportTableRow("URI", report.sourceUri.take(45) + if (report.sourceUri.length > 45) "..." else "")
+            ReportTableRow("MIME", report.mimeType)
+            ReportTableRow(
+                "BYTES ORIGINALES",
+                if (report.originalSizeBytes > 0) "${report.originalSizeBytes} B (${String.format("%.2f", report.originalSizeBytes / (1024f * 1024f))} MB)"
+                else "No disponible"
             )
-            CheckRow(
-                number = "2",
-                label = "Extracción de audio",
-                status = if (report.audioTrackFound) "CORRECTA (Stream ${report.audioMimeType})" else "SIN PISTA DE AUDIO",
-                isOk = report.audioTrackFound
+            ReportTableRow(
+                "BYTES COPIADOS",
+                "${report.copiedSizeBytes} B (${String.format("%.2f", report.copiedSizeBytes / (1024f * 1024f))} MB) [Físicamente comprobado]"
             )
-            CheckRow(
-                number = "3",
-                label = "Duración",
-                status = report.durationFormatted,
-                isOk = report.durationMs > 0
+            ReportTableRow("DURACIÓN", report.durationFormatted)
+            ReportTableRow("SAMPLE RATE", if (report.sampleRate > 0) "${report.sampleRate} Hz" else "0 Hz")
+            ReportTableRow(
+                "CANALES",
+                if (report.channels == 2) "2 (Estéreo L/R)" else if (report.channels > 0) "${report.channels} canal(es)" else "0"
             )
-            CheckRow(
-                number = "4",
-                label = "Sample rate",
-                status = "${report.sampleRate} Hz",
-                isOk = report.sampleRate > 0
+            ReportTableRow(
+                "LECTURA",
+                if (report.readSuccess) "✓ LECTURA ÍNTEGRA (InputStream validado)" else "✗ FALLO DE LECTURA"
             )
-            CheckRow(
-                number = "5",
-                label = "Canales",
-                status = if (report.channels == 2) "2 (Estéreo L/R)" else "${report.channels} canal(es)",
-                isOk = report.channels > 0
+            ReportTableRow(
+                "EXTRACCIÓN",
+                if (report.extractionSuccess) "✓ AUDIO EXTRAÍDO (${report.bytesReadTotal / 1024} KB en disco)" else "✗ SIN EXTRAER"
             )
-            CheckRow(
-                number = "6",
-                label = "Lectura correcta audio",
-                status = if (report.audioReadSuccess) "LECTURA ÍNTEGRA (${report.samplesReadCount} paquetes, ${report.bytesReadTotal / 1024} KB)" else "ERROR DE LECTURA",
-                isOk = report.audioReadSuccess
+            ReportTableRow(
+                "ESTADO",
+                report.statusText,
+                isHighlight = true,
+                highlightColor = if (isOk) StudioGreenLed else StudioRedClipping
             )
         }
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // Halt Notice: "Detenido tras extracción"
+        // Nota de Detención de Etapa
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(8.dp))
-                .background(ZunoGold.copy(alpha = 0.1f))
-                .border(1.dp, ZunoGold.copy(alpha = 0.25f), RoundedCornerShape(8.dp))
+                .background(if (isOk) ZunoGold.copy(alpha = 0.1f) else StudioRedClipping.copy(alpha = 0.1f))
+                .border(1.dp, if (isOk) ZunoGold.copy(alpha = 0.25f) else StudioRedClipping.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
                 .padding(horizontal = 10.dp, vertical = 8.dp)
         ) {
             Text(
-                text = "⏹ ETAPA DETENIDA: La pista ha sido extraída y verificada. Auto-Tune, EQ, mezcla, master y exportación permanecen inactivos hasta habilitar progresivamente la siguiente etapa.",
-                color = ZunoGoldBright,
+                text = if (isOk)
+                    "✓ ETAPA 1 COMPLETADA: La copia local ha sido verificada y el audio extraído físicamente. Habilitada progresivamente la ETAPA 2 (ANALIZAR CON IA)."
+                else
+                    "⏹ ETAPA BLOQUEADA: No se puede avanzar a Análisis ni Pulido mientras el archivo seleccionado no sea leído y verificado físicamente.",
+                color = if (isOk) ZunoGoldBright else StudioRedClipping,
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Medium,
-                lineHeight = 15.sp
+                lineHeight = 14.sp
             )
         }
     }
 }
 
 @Composable
-private fun CheckRow(
-    number: String,
+private fun ReportTableRow(
     label: String,
-    status: String,
-    isOk: Boolean
+    value: String,
+    isHighlight: Boolean = false,
+    highlightColor: Color = Color.White
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 2.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(0.45f)) {
-            Text(
-                text = "$number. $label:",
-                color = MetallicGrayLight,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.SemiBold
-            )
-        }
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(0.55f)) {
-            Text(
-                text = (if (isOk) "✓ " else "✗ ") + status,
-                color = if (isOk) Color.White else StudioRedClipping,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold
-            )
-        }
+        Text(
+            text = label,
+            color = MetallicGrayMid,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.weight(0.42f)
+        )
+        Text(
+            text = value,
+            color = if (isHighlight) highlightColor else Color.White,
+            fontSize = 10.sp,
+            fontWeight = if (isHighlight) FontWeight.Black else FontWeight.Normal,
+            fontFamily = if (isHighlight) FontFamily.Default else FontFamily.Monospace,
+            modifier = Modifier.weight(0.58f)
+        )
     }
 }

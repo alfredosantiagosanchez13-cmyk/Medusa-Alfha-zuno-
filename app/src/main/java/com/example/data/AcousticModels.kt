@@ -13,7 +13,9 @@ data class AudioTrackInfo(
     val bitrateKbps: Int,
     val fileSizeFormatted: String,
     val sourceUriString: String? = null,
-    val isFromVideo: Boolean = false
+    val isFromVideo: Boolean = false,
+    val localFilePath: String? = null,
+    val fileSizeBytes: Long = 0L
 )
 
 data class SectionEnergy(
@@ -43,47 +45,38 @@ data class FullAcousticMetrics(
     val clippingOccurrences: Int,
     val stereoBalanceLeftPercent: Float,
     val stereoBalanceRightPercent: Float,
-    val silenceIntervalsCount: Int,
-    val silenceTotalSeconds: Float,
-    
-    // Spectrum & Sections
-    val spectrumSubBassDb: Float,
-    val spectrumBassDb: Float,
-    val spectrumMidDb: Float,
-    val spectrumHighMidDb: Float,
-    val spectrumTrebleDb: Float,
-    val sectionEnergies: List<SectionEnergy>,
-    
-    // Processing method
-    val processingMethod: String = "Procesamiento por bloques continuos (Buffer de 4096 muestras)"
+    val silenceIntervalsCount: Int = 0,
+    val silenceTotalSeconds: Float = 0f,
+    val spectrumSubBassDb: Float = -18.2f,
+    val spectrumBassDb: Float = -12.4f,
+    val spectrumMidDb: Float = -14.1f,
+    val spectrumHighMidDb: Float = -16.8f,
+    val spectrumTrebleDb: Float = -21.5f,
+    val sectionEnergies: List<SectionEnergy> = emptyList(),
+    val processingMethod: String = "DSP continuo bloque a bloque (Buffer de 4096 muestras PCM)"
 )
 
 data class AcousticDiagnosis(
-    // Stem awareness
-    val mainVocalScore: Int = 85,          // 0-100
-    val harmoniesScore: Int = 60,
-    val instrumentalScore: Int = 88,
-    val drumsPunchScore: Int = 78,
-    val bassClarityScore: Int = 72,
-    val melodyPresenceScore: Int = 82,
-    
-    // Acoustic health
-    val silenceRatio: Float = 0.04f,       // e.g. 4%
-    val hasClipping: Boolean = true,
-    val clippingInstances: Int = 7,
-    val crestFactorDb: Float = 9.2f,       // Dynamics (Crest factor)
-    val dynamicRangeDb: Float = 11.4f,
-    val pitchDeviationCents: Float = 18.5f, // Pitch drift detected
-    val problematicFreqs: List<String> = listOf("315 Hz (Resonancia/Caja)", "6.8 kHz (Sibilancia)"),
-    val vocalMaskingDetected: Boolean = true,
-    val currentLoudnessLufs: Float = -19.4f,
-    val peakDbfs: Float = 0.2f,            // Over 0dBFS!
-    val stereoWidthPercent: Int = 82,      // 0-200%
-    val phaseCorrelation: Float = 0.91f,   // 0.0 to 1.0 (phase health)
-
-    // Detailed Metrics Object
+    val mainVocalScore: Int,
+    val harmoniesScore: Int,
+    val instrumentalScore: Int,
+    val drumsPunchScore: Int,
+    val bassClarityScore: Int,
+    val melodyPresenceScore: Int,
+    val silenceRatio: Float,
+    val hasClipping: Boolean,
+    val clippingInstances: Int,
+    val crestFactorDb: Float,
+    val dynamicRangeDb: Float,
+    val pitchDeviationCents: Float,
+    val problematicFreqs: List<String> = emptyList(),
+    val vocalMaskingDetected: Boolean = false,
+    val currentLoudnessLufs: Float = -24.17f,
+    val peakDbfs: Float = -1.2f,
+    val stereoWidthPercent: Int = 100,
+    val phaseCorrelation: Float = 0.95f,
     val fullMetrics: FullAcousticMetrics? = null,
-
+    
     // Simplified human status report
     val estadoVoz: String = "Opaca y con resonancias",
     val estadoAfinacion: String = "Desviación ligera (+18.5 cents)",
@@ -104,17 +97,15 @@ enum class MasterProfile(val displayName: String, val targetLufs: Float, val des
 
 data class PolishSettings(
     // Voz
-    val pitchCorrectionStrength: Float = 0.65f, // 0 = none, 1 = maximum
-    val vocalPresenceDb: Float = 2.4f,          // boost in dB
+    val pitchCorrectionStrength: Float = 0.65f,
+    val vocalPresenceDb: Float = 2.4f,
     val vocalVolumeDb: Float = 1.0f,
-    
     // Mezcla
-    val vocalInstrumentalBalance: Float = 0.0f, // -10 (more inst) to +10 (more vocal)
+    val vocalInstrumentalBalance: Float = 0.0f,
     val bassGainDb: Float = 1.8f,
-    val midGainDb: Float = -1.2f,               // clean mud
-    val trebleGainDb: Float = 2.2f,             // silky air
-    val stereoWidthRatio: Float = 1.25f,        // 1.0 = normal, 1.3 = wide
-    
+    val midGainDb: Float = -1.2f,
+    val trebleGainDb: Float = 2.2f,
+    val stereoWidthRatio: Float = 1.25f,
     // Master
     val profile: MasterProfile = MasterProfile.NATURAL,
     val deEsserActive: Boolean = true,

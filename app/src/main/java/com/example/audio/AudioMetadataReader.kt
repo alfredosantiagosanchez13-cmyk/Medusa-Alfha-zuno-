@@ -1,11 +1,10 @@
 package com.example.audio
 
 import android.content.Context
-import android.content.res.AssetFileDescriptor
 import android.media.MediaMetadataRetriever
 import android.net.Uri
+import android.provider.OpenableColumns
 import com.example.data.AudioTrackInfo
-import java.io.File
 
 object AudioMetadataReader {
 
@@ -13,13 +12,30 @@ object AudioMetadataReader {
         val retriever = MediaMetadataRetriever()
         var title = "Audio Desconocido"
         var artist = "Zuno Production"
-        var durationMs = 15000L
-        var format = "MP4"
-        var sampleRate = 44100
-        var channels = 2
-        var bitrate = 192
+        var durationMs = 0L
+        var format = "Desconocido"
+        var sampleRate = 0
+        var channels = 0
+        var bitrate = 0
         var isFromVideo = false
-        var fileSizeFormatted = "164 KB"
+        var fileSizeFormatted = "0 B"
+        var originalSizeBytes = 0L
+
+        // Consultar nombre y tamaño reales mediante OpenableColumns
+        try {
+            context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val nameIdx = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                    if (nameIdx != -1) cursor.getString(nameIdx)?.let { title = it }
+                    val sizeIdx = cursor.getColumnIndex(OpenableColumns.SIZE)
+                    if (sizeIdx != -1 && !cursor.isNull(sizeIdx)) {
+                        originalSizeBytes = cursor.getLong(sizeIdx)
+                        val mb = originalSizeBytes / (1024f * 1024f)
+                        fileSizeFormatted = if (mb >= 1.0f) String.format("%.2f MB", mb) else "${originalSizeBytes / 1024} KB"
+                    }
+                }
+            }
+        } catch (_: Exception) {}
 
         try {
             retriever.setDataSource(context, uri)
@@ -32,7 +48,7 @@ object AudioMetadataReader {
 
             val durationStr = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
             if (!durationStr.isNullOrBlank()) {
-                durationMs = durationStr.toLongOrNull() ?: 15000L
+                durationMs = durationStr.toLongOrNull() ?: 0L
             }
 
             val mime = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_MIMETYPE) ?: ""
@@ -48,32 +64,18 @@ object AudioMetadataReader {
             } else if (mime.contains("m4a") || mime.contains("mp4a")) {
                 format = "M4A"
             } else {
-                format = "AUDIO"
+                format = if (mime.isNotBlank()) mime else "AUDIO"
             }
 
             val bitrateStr = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITRATE)
             if (!bitrateStr.isNullOrBlank()) {
-                bitrate = (bitrateStr.toIntOrNull() ?: 192000) / 1000
+                bitrate = (bitrateStr.toIntOrNull() ?: 0) / 1000
             }
-
-            // Estimate file size
-            context.contentResolver.openFileDescriptor(uri, "r")?.use { pfd ->
-                val sizeBytes = pfd.statSize
-                if (sizeBytes > 0) {
-                    val sizeMb = sizeBytes / (1024f * 1024f)
-                    fileSizeFormatted = if (sizeMb < 1.0f) "${sizeBytes / 1024} KB" else String.format("%.1f MB", sizeMb)
-                }
+        } catch (_: Exception) {
+            if (title == "Audio Desconocido") {
+                val clean = uri.lastPathSegment?.substringAfterLast("/")?.substringAfterLast(":")
+                if (!clean.isNullOrBlank()) title = clean
             }
-
-            // Extract clean title from URI
-            val uriPath = uri.lastPathSegment
-            if (title == "Audio Desconocido" && !uriPath.isNullOrBlank()) {
-                val clean = uriPath.substringAfterLast("/").substringAfterLast(":")
-                if (clean.isNotBlank()) title = clean
-            }
-
-        } catch (e: Exception) {
-            title = uri.lastPathSegment ?: "El Fondo Era el Cimiento.mp4"
         } finally {
             try {
                 retriever.release()
@@ -90,13 +92,14 @@ object AudioMetadataReader {
             bitrateKbps = bitrate,
             fileSizeFormatted = fileSizeFormatted,
             sourceUriString = uri.toString(),
-            isFromVideo = isFromVideo
+            isFromVideo = isFromVideo,
+            fileSizeBytes = originalSizeBytes
         )
     }
 
     /**
-     * Pre-configured studio demo tracks for immediate one-click testing.
-     * "El Fondo Era el Cimiento.mp4" is the primary target track.
+     * Pistas de estudio para comprobación inmediata.
+     * "El Fondo Era el Cimiento.mp4" es la pista principal requerida.
      */
     fun getStudioDemos(): List<AudioTrackInfo> {
         return listOf(
@@ -104,37 +107,14 @@ object AudioMetadataReader {
                 title = "El Fondo Era el Cimiento.mp4",
                 artist = "@alfhaseguridad070",
                 durationMs = 298000L,
-                format = "MP4 Video (Suno Official Master)",
+                format = "MP4 Video (Audio Extraído)",
                 sampleRate = 44100,
                 channels = 2,
                 bitrateKbps = 192,
-                fileSizeFormatted = "2.84 MB",
+                fileSizeFormatted = "2.57 MB",
                 sourceUriString = "assets://El Fondo Era el Cimiento.mp4",
-                isFromVideo = true
-            ),
-            AudioTrackInfo(
-                title = "ZUNO 56300 - Trap Urbano (Raw Mix)",
-                artist = "Medusa Alfha Records",
-                durationMs = 158000L,
-                format = "WAV 24-bit",
-                sampleRate = 48000,
-                channels = 2,
-                bitrateKbps = 1536,
-                fileSizeFormatted = "28.8 MB",
-                sourceUriString = "demo://zuno_trap_56300",
-                isFromVideo = false
-            ),
-            AudioTrackInfo(
-                title = "Medusa Alfha - Balada Acústica & Voz",
-                artist = "Alfha Studio",
-                durationMs = 192000L,
-                format = "FLAC Lossless",
-                sampleRate = 44100,
-                channels = 2,
-                bitrateKbps = 1411,
-                fileSizeFormatted = "34.1 MB",
-                sourceUriString = "demo://medusa_vocal_ballad",
-                isFromVideo = false
+                isFromVideo = true,
+                fileSizeBytes = 2700246L
             )
         )
     }

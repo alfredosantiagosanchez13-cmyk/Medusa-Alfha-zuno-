@@ -22,7 +22,10 @@ data class ExportResult(
     val uri: Uri,
     val sizeBytes: Long,
     val message: String
-)
+) {
+    val isSuccess: Boolean get() = sizeBytes > 0L
+    val fileName: String get() = file.name
+}
 
 object AudioExporter {
 

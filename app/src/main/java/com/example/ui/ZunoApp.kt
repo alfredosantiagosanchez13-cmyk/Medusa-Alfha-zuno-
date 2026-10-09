@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ui.components.ZunoAbPlayerControl
+import com.example.ui.components.ZunoAudioRecorderCard
 import com.example.ui.components.ZunoCoverHero
 import com.example.ui.components.ZunoDiagnosisCard
 import com.example.ui.components.ZunoExportModal
@@ -61,14 +62,15 @@ fun ZunoApp(
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val recorderState by viewModel.recorderState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
 
     val filePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
+        contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
         if (uri != null) {
-            viewModel.loadFromUri(context, uri)
+            viewModel.handleFileSelection(context, uri)
         }
     }
 
@@ -163,6 +165,17 @@ fun ZunoApp(
                     )
                 }
 
+                // Captura Vocal en Vivo con Micrófono (AudioRecorder)
+                item {
+                    ZunoAudioRecorderCard(
+                        recorderState = recorderState,
+                        onStartRecording = { viewModel.startVocalRecording() },
+                        onStopRecording = { viewModel.stopVocalRecording() },
+                        onCancelRecording = { viewModel.cancelVocalRecording() },
+                        onUseRecordedFile = { file -> viewModel.ingestRecordedVocal(context, file) }
+                    )
+                }
+
                 // 3. Staged Production Cards (Stage 1 Extracción -> Stage 2 Análisis -> Stage 3 Pulido)
                 item {
                     ZunoStepCards(
@@ -172,8 +185,8 @@ fun ZunoApp(
                         diagnosis = uiState.diagnosis,
                         geminiStatusNotice = uiState.geminiStatusNotice,
                         appliedSteps = uiState.appliedSteps,
-                        onPickFile = { filePickerLauncher.launch("*/*") },
-                        onSelectDemo = { demo -> viewModel.loadTrack(demo) },
+                        onPickFile = { filePickerLauncher.launch(arrayOf("video/*", "audio/*", "*/*")) },
+                        onSelectDemo = { demo -> viewModel.selectDemoTrack(context, demo) },
                         onVerifyAndExtract = { viewModel.verifyAndExtractAudio() },
                         onAnalyze = { viewModel.analyzeTrack() },
                         onPolish = { viewModel.polishTrack() }
